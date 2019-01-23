@@ -10,6 +10,8 @@ zIMG=${uIMG}.gz
 usage()
 {
 	echo $0 un/re uInitd
+	echo "       $0 un '{The name of initrd file}': unpack the uinitrd image to rootfs/"
+	echo "       $0 re '{The name of initrd file}': repack the uinitrd image from rootfs/"
 	exit -1
 }
 
