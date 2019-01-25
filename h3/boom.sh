@@ -4,7 +4,12 @@
 
 usage()
 {
-	echo "$0 arch | build"
+	echo "$0 arch | build | dump"
+	echo "    dump: 	Copy backup imgs to H3 & Dump disk img to local file"
+	echo "    arch: 	Backup H3 part[1,2,3] to rootfs.img.gz opt.img.gz vars.img.gz"
+	echo "   build: 	Setup failsafe files to H3 disk"
+	echo "	"
+	echo "	Any questions: fengmushu@gmail.com"
 	exit 1
 }
 
@@ -48,7 +53,7 @@ archive_part()
 		exit 1
 	}
 	# DO archive
-	sudo sh -c "cat $PART | gzip -9 > $FNAME.gz"
+	sudo sh -c "cat $PART | gzip -9 > $FNAME.img.gz"
 }
 
 check_disk()
@@ -64,13 +69,55 @@ check_disk()
 
 do_archive()
 {
-	local device=$1
+	local DEVICE=$1
 
-	for part in `ls ${device}[0-9]`;
+	for part in `ls ${DEVICE}[0-9]`;
 	do
 		echo "archive $part ..."
 		archive_part $part
 	done
+}
+
+do_dump()
+{
+	local DEVICE=$1
+	local PART="${DEVICE}4"
+	local WKDIR="/tmp/dump_$$"
+	local DUMP_TO="qpt-full.img.gz"
+
+	echo "backup use $PART ..."
+	sudo mkfs.vfat $PART || {
+		echo "error format vfat backup part"
+		exit -1
+	}
+
+	mkdir -p $WKDIR || exit -1
+	echo "mount $PART to $WKDIR ..."
+	sudo mount $PART $WKDIR || {
+		echo "error mount vfat backup part"
+		exit -2
+	}
+
+	echo "copy files img ..."
+	sudo cp *.img.gz $WKDIR/ || {
+		echo "error cp imgs to backup part"
+		sudo umount $WKDIR
+		exit -2
+	}
+
+	echo "unmount $WKDIR ..."
+	sudo umount $WKDIR || {
+		echo "error umount $WKDIR"
+		exit -2
+	}
+
+	echo "dump full disk to $DUMP_TO ..."
+	sudo sh -c "cat $DEVICE | gzip -9 > $DUMP_TO" || {
+		echo "dump full disk image failed"
+		exit -3
+	}
+
+	echo "finished create backup images & dump full disk"
 }
 
 dd_image()
@@ -134,13 +181,16 @@ main()
 
 	case $1 in
 		arch)
-		do_archive $DEVICE
-	;;
+			do_archive $DEVICE
+		;;
 		build)
-		do_build $DEVICE
-	;;
+			do_build $DEVICE
+		;;
+		dump)
+			do_dump $DEVICE
+		;;
 		*)
-		usage
+			usage
 	;;
 	esac
 }
