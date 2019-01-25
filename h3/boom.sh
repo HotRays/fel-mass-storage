@@ -89,10 +89,10 @@ do_build()
 {
 	local DISK=$1
 	# 
-	# 0x42000000 $BOARD/kernel.bin 		//2048
-	# 0x43000000 $BOARD/dtb.bin 		//1024
-	# 0x43300000 $BOARD/initfs.bin		//16348
-	# 0x43100000 $BOARD/boot-scr.bin	//1152
+	# 0x42000000 $BOARD/kernel.bin 		//2048 : 0x100000
+	# 0x43000000 $BOARD/dtb.bin 		//1024 : 0x080000
+	# 0x43300000 $BOARD/initfs.bin		//16384: 0x800000
+	# 0x43100000 $BOARD/boot-scr.bin	//1152 : 0x090000
 	#
 
 	[ -b $DISK ] || {
@@ -110,7 +110,7 @@ do_build()
 	dd_image boot-scr.bin $DISK 1152
 	
 	echo "write ramfs ..."
-	dd_image initfs.bin $DISK 16348
+	dd_image initfs.bin $DISK 16384
 
 	return 0
 }
