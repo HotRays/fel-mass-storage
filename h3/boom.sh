@@ -4,12 +4,31 @@
 
 usage()
 {
-	echo "$0 arch | build | dump"
-	echo "    dump: 	Copy backup imgs to H3 & Dump disk img to local file"
-	echo "    arch: 	Backup H3 part[1,2,3] to rootfs.img.gz opt.img.gz vars.img.gz"
-	echo "   build: 	Setup failsafe files to H3 disk"
-	echo "	"
-	echo "	Any questions: fengmushu@gmail.com"
+	echo "$0 arch | failsafe | fullimg | make [full-img.gz]"
+	echo "  fullimg:   Copy partX imgs to H3 & Dump full disk img to local file"
+	echo "              格式化备份分区,拷贝各分区文件镜像压缩文件到备份分区,再读出完整的镜像,保存为文件."
+	echo "				"
+	echo "    arch:    Archive H3 part[1,2,3] to [rootfs.img.gz opt.img.gz vars.img.gz]"
+	echo "              压缩H3的各分区镜像为独立文件."
+	echo "				"
+	echo "    make:    Make of H3 production from image file"
+	echo "              用完整的磁盘镜像压缩文件生产H3设备."
+	echo "				"
+	echo " failsafe:   Setup failsafe rom on to H3 disk"
+	echo "              基于4个文件(内核,dtb,boot.scr,ramfs), 构造Failsafe数据区, 并写入H3设备."
+	echo "				"
+	echo "	使用说明:"
+	echo "	 1. 基于armbian环境, 生成磁盘raw镜像"
+	echo "	 2. 将磁盘raw镜像写入H3设备"
+	echo "	 3. 上电启动设备, 完成各项初始化配置(管理员账号密码, 显示器分辨率...)"
+	echo "	 4. 用fel-mass-storage启动设备, 保存OTG-USB连接主机状态"
+	echo "	 5. 正常情况, 主机会看到H3磁盘的USB映射"
+	echo "	 6. 执行[$0] failsafe: 写入failsafe数据区;"
+	echo "	 7. 执行[$0] arch: 读取分区镜像&压缩;"
+	echo "	 8. 执行[$0] fullimg: 将各个分区镜像文件备份到变砖恢复分区, 并生成完整的磁盘镜像压缩文件;"
+	echo "        "
+	echo " 	生产时,在新设备处于OTG-USB挂载状态,执行[$0] make [full-img.gz] 即可将完整磁盘镜像写入设备;"
+	echo "	           Any questions: fengmushu@gmail.com"
 	exit 1
 }
 
@@ -22,13 +41,13 @@ archive_part()
 
 	case $PART in
 		*sd[a-z]1)
-			FNAME="rootfs"
+			FNAME="rootfs.img.gz"
 		;;
 		*sd[a-z]2)
-			FNAME="opt"
+			FNAME="opt.img.gz"
 		;;
 		*sd[a-z]3)
-			FNAME="vars"
+			FNAME="vars.img.gz"
 		;;
 		*)
 			return 0
@@ -36,7 +55,7 @@ archive_part()
 	esac
 
 	mkdir -p $WKDIR || exit 1
-	echo "archive $PART to $FNAME.gz"
+	echo "archive $PART to $FNAME"
 
 	sudo mount $PART $WKDIR || {
 		echo "mount $PART failed"
@@ -53,7 +72,9 @@ archive_part()
 		exit 1
 	}
 	# DO archive
-	sudo sh -c "cat $PART | gzip -9 > $FNAME.img.gz"
+	sudo sh -c "cat $PART | gzip -9 > $FNAME" && {
+		echo "finished"
+	}
 }
 
 check_disk()
@@ -78,7 +99,7 @@ do_archive()
 	done
 }
 
-do_dump()
+do_fullimg()
 {
 	local DEVICE=$1
 	local PART="${DEVICE}4"
@@ -96,6 +117,12 @@ do_dump()
 	sudo mount $PART $WKDIR || {
 		echo "error mount vfat backup part"
 		exit -2
+	}
+
+	cd $WKDIR && {
+		echo "clean up partition ..."
+		sudo dd if=/dev/zero of=zero bs=1M conv=fsync 2>/dev/null; sudo rm zero
+		cd -
 	}
 
 	echo "copy files img ..."
@@ -132,7 +159,7 @@ dd_image()
 	sudo dd if=$1 of=$2 bs=1024 seek=$3 conv=fsync >/dev/null 2>&1 || exit 1
 }
 
-do_build()
+do_failsafe()
 {
 	local DISK=$1
 	# 
@@ -162,6 +189,19 @@ do_build()
 	return 0
 }
 
+do_make()
+{
+	local DEVICE=$1
+	local SRCFILE=$2
+
+	echo "make H3 from file $SRCFILE"
+	sudo sh -c "zcat $SRCFILE > $DEVICE" || {
+		echo "error make H3 from $SRCFILE"
+		exit -1
+	}
+	echo "finished"
+}
+
 main()
 {
 	local DEVICE
@@ -183,15 +223,18 @@ main()
 		arch)
 			do_archive $DEVICE
 		;;
-		build)
-			do_build $DEVICE
+		failsafe)
+			do_failsafe $DEVICE
 		;;
-		dump)
-			do_dump $DEVICE
+		fullimg)
+			do_fullimg $DEVICE
+		;;
+		make)
+			do_make $DEVICE $2
 		;;
 		*)
 			usage
-	;;
+		;;
 	esac
 }
 
