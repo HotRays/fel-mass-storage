@@ -1,3 +1,18 @@
+# 修改部分说明
+
+## H3-QPT平台, 变砖修复支持
+
+### 镜像编辑/制作工具:
+- h3/boom.sh : 用于生产镜像制作
+- h3/repack_rootfs.sh : cpio.uboot 格式镜像的打包/解压工具
+- start.sh [board:h3/h6] : fel-mass-storage 方式启动终端
+
+### 快速修复:
+- dd写入32MB的变砖修复数据到mmcblk0 (如果系统能起动,可直接写入,如果不能,使用fel-mass-storage方式写入)
+- 终端重启,灯闪时按reset键,等待终端启动完成
+- 用双头usb-type-a的线将设备otg接口连接到linux主机,用vfat格式化第四分区,并将三个分区备份文件写入该分区
+- 终端重启,并按第2步,进入reset操作,自动完成变砖修复
+
 # Preparations
 
 ## Linux and OS X
