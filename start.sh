@@ -3,6 +3,15 @@
 BOARD=$1
 [ -n $BOARD ] || BOARD=h3
 
+usage()
+{
+	echo "find the H3/6 sdX device"
+	echo "  dd if=u-boot-sunxi-with-spl.bin of=/dev/sdc bs=1024 seek=8 conv=notrunc,fsync"
+	exit -1
+}
+
+[ $# -ge 1 ] || usage
+
 echo "Connect '$BOARD' device in FEL mode and press <Enter>"
 read
 
@@ -28,6 +37,7 @@ case $BOARD in
     ;;
     *)
 	echo "unsupported platform $BOARD"
+	usage
     ;;
 esac
 
