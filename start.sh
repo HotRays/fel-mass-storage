@@ -16,6 +16,10 @@ echo "Connect '$BOARD' device in FEL mode and press <Enter>"
 read
 
 case $BOARD in
+	u-h3)
+		sunxi-fel -p uboot u-boot-sunxi-with-spl.bin
+	read
+	;;
     h3)
 	sunxi-fel -p uboot $BOARD/u-boot-sunxi-with-spl.bin \
 		write 0x42000000 $BOARD/zImage \
