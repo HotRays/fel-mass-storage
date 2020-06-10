@@ -14,7 +14,7 @@
 - 终端重启,并按第2步,进入reset操作,自动完成变砖修复
 
 # Preparations
-![image](fengmushu/fel-mass-storage/blob/master/firehouse.png?raw=true)
+![image](https://github.com/fengmushu/fel-mass-storage/blob/master/firehouse.png?raw=true)
 
 ## Linux and OS X
 
